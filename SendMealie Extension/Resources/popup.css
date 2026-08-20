@@ -1,15 +1,23 @@
-:root {
-    color-scheme: light dark;
-}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
-body {
-    width: 100px;
-    padding: 10px;
-
-    font-family: system-ui;
-    text-align: center;
-}
-
-@media (prefers-color-scheme: dark) {
-    /* Dark Mode styles go here. */
-}
+:root { color-scheme: light; --ink: #1c2421; --muted: #66716c; --paper: #f5f1e8; --mint: #b9d9c4; --green: #275b4b; --line: #d7d9cd; }
+* { box-sizing: border-box; }
+body { width: 348px; margin: 0; color: var(--ink); background: var(--paper); font: 14px 'DM Sans', sans-serif; }
+main { padding: 24px; }
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+.mark { display: grid; place-items: center; width: 38px; height: 38px; color: var(--green); background: var(--mint); border-radius: 12px 12px 12px 3px; font: 700 20px 'Space Grotesk', sans-serif; }
+.eyebrow, .label { margin: 0 0 4px; color: var(--green); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+h1, h2 { margin: 0; font: 700 21px 'Space Grotesk', sans-serif; letter-spacing: 0; }
+h2 { margin-bottom: 20px; }
+.recipe-preview { display: flex; align-items: center; gap: 12px; min-height: 70px; padding: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.48); border-radius: 8px; }
+.recipe-icon { color: var(--green); font-size: 25px; }
+.recipe-preview strong { display: block; max-width: 245px; overflow: hidden; font-size: 13px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+button { width: 100%; margin-top: 14px; padding: 12px 15px; border: 0; border-radius: 7px; color: #fff; background: var(--green); cursor: pointer; font: 700 14px 'DM Sans', sans-serif; }
+button:hover { background: #1b473a; } button:disabled { cursor: wait; opacity: .6; }
+button span { margin-right: 5px; font-size: 17px; }
+.text-button { width: auto; margin: 14px 0 0; padding: 4px 0; color: var(--green); background: transparent; font-size: 12px; } .text-button:hover { color: var(--ink); background: transparent; }
+#status, #settings-status { min-height: 18px; margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; } .success { color: var(--green) !important; } .error { color: #a04435 !important; }
+label { display: block; margin: 14px 0; color: var(--muted); font-size: 12px; font-weight: 700; }
+input { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: #fffdf8; font: 13px 'DM Sans', sans-serif; } input:focus { outline: 2px solid var(--mint); border-color: var(--green); }
+.hint { color: var(--muted); font-size: 11px; line-height: 1.4; }.form-actions { display: flex; align-items: center; gap: 18px; }.form-actions button { flex: 1; }.form-actions .text-button { flex: 0 0 auto; }
+[hidden] { display: none; }

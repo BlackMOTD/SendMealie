@@ -1,11 +1,45 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="popup.css">
-    <script type="module" src="popup.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SendMealie</title>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <strong>Hello World!</strong>
+  <main>
+    <header>
+      <div class="mark">M</div>
+      <div>
+        <p class="eyebrow">SendMealie</p>
+        <h1>La recette, dans Mealie.</h1>
+      </div>
+    </header>
+
+    <section id="send-view">
+      <div class="recipe-preview">
+        <span class="recipe-icon">◈</span>
+        <div>
+          <span class="label">Page actuelle</span>
+          <strong id="recipe-title">Lecture de la page…</strong>
+        </div>
+      </div>
+      <button id="send-button" type="button"><span>↗</span> Envoyer à Mealie</button>
+      <p id="status" role="status" aria-live="polite"></p>
+      <button id="settings-link" class="text-button" type="button">Configurer la connexion</button>
+    </section>
+
+    <form id="settings-view" hidden>
+      <p class="eyebrow">Connexion</p>
+      <h2>Configurer Mealie</h2>
+      <label>Adresse de Mealie<input id="mealie-url" type="url" placeholder="https://mealie.exemple.com" required></label>
+      <label>Jeton API<input id="token" type="password" placeholder="Votre jeton Bearer" required></label>
+      <label>Endpoint d’import<input id="endpoint" type="text" value="/api/recipes/create/url" required></label>
+      <p class="hint">Le jeton est conservé uniquement dans le stockage local de Safari.</p>
+      <div class="form-actions"><button id="cancel-button" class="text-button" type="button">Annuler</button><button type="submit">Enregistrer</button></div>
+      <p id="settings-status" role="status" aria-live="polite"></p>
+    </form>
+  </main>
+  <script src="popup.js"></script>
 </body>
 </html>
