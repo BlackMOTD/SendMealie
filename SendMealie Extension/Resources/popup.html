@@ -7,37 +7,117 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-gear" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+    </symbol>
+    <symbol id="i-external" viewBox="0 0 24 24">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+      <path d="M15 3h6v6"/>
+      <path d="M10 14 21 3"/>
+    </symbol>
+    <symbol id="i-send" viewBox="0 0 24 24">
+      <path d="M7 17 17 7"/>
+      <path d="M7 7h10v10"/>
+    </symbol>
+    <!-- Tracé officiel Mealie (Material Design Icons « silverware-fork-knife »), plein et non tracé. -->
+    <symbol id="i-mealie" viewBox="0 0 24 24">
+      <path d="M8.1,13.34L3.91,9.16C2.35,7.59 2.35,5.06 3.91,3.5L10.93,10.5L8.1,13.34M13.41,13L20.29,19.88L18.88,21.29L12,14.41L5.12,21.29L3.71,19.88L13.36,10.22L13.16,10C12.38,9.23 12.38,7.97 13.16,7.19L17.5,2.82L18.43,3.74L15.19,7L16.15,7.94L19.39,4.69L20.31,5.61L17.06,8.85L18,9.81L21.26,6.56L22.18,7.5L17.81,11.84C17.03,12.62 15.77,12.62 15,11.84L14.78,11.64L13.41,13Z"/>
+    </symbol>
+    <symbol id="i-page" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
+      <path d="M14 2v6h6"/>
+      <path d="M8 13h8M8 17h5"/>
+    </symbol>
+    <symbol id="i-key" viewBox="0 0 24 24">
+      <circle cx="7.5" cy="15.5" r="4.5"/>
+      <path d="M10.7 12.3 21 2"/>
+      <path d="M17 6l3 3M14.5 8.5l3 3"/>
+    </symbol>
+    <symbol id="i-user" viewBox="0 0 24 24">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24">
+      <path d="M5 12h14M13 6l6 6-6 6"/>
+    </symbol>
+  </svg>
+
   <main>
     <header>
-      <div class="mark">M</div>
-      <div>
-        <p class="eyebrow">SendMealie</p>
-        <h1>La recette, dans Mealie.</h1>
+      <svg class="mark" viewBox="0 0 64 64" role="img" aria-label="SendMealie">
+        <rect width="64" height="64" rx="14" fill="#e58325"/>
+        <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="32" cy="32" r="12" stroke-width="5.2"/>
+          <g stroke-width="2.4">
+            <path d="M8.3 15.5V24"/>
+            <path d="M12.5 15.5V24"/>
+            <path d="M16.7 15.5V24"/>
+          </g>
+          <path d="M9.9 24h5.2" stroke-width="4.6"/>
+          <path d="M12.5 24v24" stroke-width="5.2"/>
+          <path d="M51.5 28.5V48" stroke-width="5.2"/>
+          <path d="M51.5 15.5V29.5" stroke-width="7.8"/>
+        </g>
+      </svg>
+      <div class="header-text">
+        <h1>SendMealie</h1>
+        <p id="host" class="host"></p>
       </div>
+      <button id="settings-link" class="icon-button" type="button" title="Réglages de la connexion" aria-label="Réglages de la connexion">
+        <svg class="icon"><use href="#i-gear"/></svg>
+      </button>
     </header>
 
     <section id="send-view">
-      <div class="recipe-preview">
-        <span class="recipe-icon">◈</span>
-        <div>
-          <span class="label">Page actuelle</span>
+      <div class="card">
+        <span class="card-icon"><svg class="icon"><use href="#i-page"/></svg></span>
+        <div class="card-body">
+          <span class="label" id="recipe-label">Page actuelle</span>
           <strong id="recipe-title">Lecture de la page…</strong>
         </div>
       </div>
-      <button id="send-button" type="button"><span>↗</span> Envoyer à Mealie</button>
+
+      <button id="send-button" class="primary" type="button">
+        <svg class="icon icon-solid"><use href="#i-mealie"/></svg>Enregistrer sur Mealie
+      </button>
       <p id="status" role="status" aria-live="polite"></p>
-      <button id="settings-link" class="text-button" type="button">Configurer la connexion</button>
+
+      <button id="open-recipe" class="text-button" type="button" hidden>
+        Voir la recette<svg class="icon"><use href="#i-arrow-right"/></svg>
+      </button>
+
+      <p id="account" class="account" hidden>
+        <span id="account-user"><svg class="icon"><use href="#i-user"/></svg><span></span></span>
+        <button id="account-recipes" class="account-link" type="button">
+          <svg class="icon"><use href="#i-book"/></svg><span></span><svg class="icon icon-tiny"><use href="#i-external"/></svg>
+        </button>
+      </p>
     </section>
 
     <form id="settings-view" hidden>
-      <p class="eyebrow">Connexion</p>
-      <h2>Configurer Mealie</h2>
-      <label>Adresse de Mealie<input id="mealie-url" type="url" placeholder="https://mealie.exemple.com" required></label>
-      <label>Jeton API<input id="token" type="password" placeholder="Votre jeton Bearer" required></label>
-      <label>Endpoint d’import<input id="endpoint" type="text" value="/api/recipes/create/url" required></label>
-      <p class="hint">Le jeton est conservé uniquement dans le stockage local de Safari.</p>
-      <div class="form-actions"><button id="cancel-button" class="text-button" type="button">Annuler</button><button type="submit">Enregistrer</button></div>
+      <h2>Connexion à Mealie</h2>
+      <p class="hint setup-intro" id="setup-intro" hidden>Renseignez l’adresse de votre instance pour commencer. La clé API est créée automatiquement après identification.</p>
+
+      <label for="mealie-url">Lien du serveur</label>
+      <input id="mealie-url" type="url" placeholder="https://mealie.exemple.com" required>
+
+      <button id="auto-connect" class="primary" type="button">
+        <svg class="icon"><use href="#i-key"/></svg>Se connecter à Mealie
+      </button>
       <p id="settings-status" role="status" aria-live="polite"></p>
+      <button id="retry-connect" class="secondary" type="button" hidden>Relancer la détection</button>
+
+
+      <div class="settings-footer">
+        <button id="cancel-button" class="text-button" type="button">Retour</button>
+        <button id="reset-button" class="text-button danger" type="button">Réinitialiser</button>
+      </div>
     </form>
   </main>
   <script src="popup.js"></script>

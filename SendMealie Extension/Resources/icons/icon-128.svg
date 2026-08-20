@@ -1,1 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" rx="32" fill="#b9d9c4"/><path d="M32 32h64v64H32z" fill="#275b4b"/><path d="M48 48h32v32H48z" fill="#f5f1e8"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 64 64" role="img" aria-label="SendMealie">
+  <rect width="64" height="64" rx="14" fill="#e58325"/>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="32" r="12" stroke-width="5.2"/>
+    <g stroke-width="2.4">
+      <path d="M8.3 15.5V24"/>
+      <path d="M12.5 15.5V24"/>
+      <path d="M16.7 15.5V24"/>
+    </g>
+    <path d="M9.9 24h5.2" stroke-width="4.6"/>
+    <path d="M12.5 24v24" stroke-width="5.2"/>
+    <path d="M51.5 28.5V48" stroke-width="5.2"/>
+    <path d="M51.5 15.5V29.5" stroke-width="7.8"/>
+  </g>
+</svg>

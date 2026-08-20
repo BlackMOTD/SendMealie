@@ -1,13 +1,17 @@
 {
   "manifest_version": 3,
   "name": "SendMealie",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Envoie la recette de la page courante vers Mealie.",
   "permissions": ["activeTab", "storage"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "action": {
-    "default_title": "Envoyer à Mealie",
-    "default_popup": "popup.html"
+    "default_title": "Enregistrer sur Mealie",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "toolbar-off-16.png",
+      "32": "toolbar-off-32.png"
+    }
   },
   "background": {
     "service_worker": "background.js"
@@ -20,8 +24,8 @@
     }
   ],
   "icons": {
-    "16": "icons/icon-16.svg",
-    "32": "icons/icon-32.svg",
-    "128": "icons/icon-128.svg"
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "128": "icon-128.png"
   }
 }

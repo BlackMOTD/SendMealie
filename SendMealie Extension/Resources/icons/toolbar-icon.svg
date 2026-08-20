@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 64 64" role="img" aria-label="SendMealie">
+  <g fill="none" stroke="#e58325" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="32" r="16.2" fill="#e58325" stroke="none"/>
+    <g stroke-width="2.8">
+      <path d="M4.5 9V23"/>
+      <path d="M9 9V23"/>
+      <path d="M13.5 9V23"/>
+    </g>
+    <path d="M5.5 23h7" stroke-width="5.4"/>
+    <path d="M9 23v32" stroke-width="6"/>
+    <path d="M54.5 25v30" stroke-width="6"/>
+    <path d="M54.5 9v17" stroke-width="9"/>
+  </g>
+</svg>
