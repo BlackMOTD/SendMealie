@@ -92,6 +92,70 @@ async function accountInfo() {
   }
 }
 
+const TOKEN_NAME = "SendMealie";
+
+// Réinitialiser sans révoquer laisserait une clé orpheline dans le profil Mealie.
+// On cible l’identifiant retenu à la création ; à défaut, les clés portant notre nom.
+async function revokeToken() {
+  const { mealieUrl, token, tokenId } = await browser.storage.local.get({ ...DEFAULTS, tokenId: null });
+  if (!mealieUrl || !token) return { ok: true, deleted: 0 };
+
+  const baseUrl = mealieUrl.replace(/\/+$/, "");
+  const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+
+  const remove = async (id) => {
+    const response = await fetch(`${baseUrl}/api/users/api-tokens/${id}`, { method: "DELETE", headers });
+    return { ok: response.ok, status: response.status };
+  };
+
+  try {
+    // Chemin direct : l’identifiant retenu à la création.
+    if (tokenId !== null && tokenId !== undefined) {
+      const attempt = await remove(tokenId);
+      if (attempt.ok) return { ok: true, deleted: 1 };
+      if (attempt.status !== 404) {
+        return { ok: false, deleted: 0, error: `Mealie a refusé la suppression (${attempt.status}).` };
+      }
+      // 404 : la clé retenue n’existe plus, on retombe sur la recherche par nom.
+    }
+
+    // Repli : retrouver la clé par son nom dans le profil.
+    const me = await fetch(`${baseUrl}/api/users/self`, { headers });
+    if (!me.ok) {
+      return { ok: false, deleted: 0, error: `Lecture du profil refusée (${me.status}).` };
+    }
+
+    const data = await me.json().catch(() => null);
+    const ids = (data?.tokens || [])
+      .filter((entry) => entry?.name === TOKEN_NAME)
+      .map((entry) => entry?.id)
+      .filter((id) => id !== null && id !== undefined);
+
+    // Ne jamais annoncer un succès sans suppression : le profil expose `tokens`
+    // en `array | null`, et une liste absente passait auparavant pour un succès.
+    if (!ids.length) {
+      return {
+        ok: false,
+        deleted: 0,
+        error: "aucune clé « SendMealie » listée dans le profil."
+      };
+    }
+
+    let deleted = 0;
+    let lastStatus = 0;
+    for (const id of ids) {
+      const attempt = await remove(id);
+      if (attempt.ok) deleted += 1;
+      else lastStatus = attempt.status;
+    }
+
+    if (deleted === ids.length) return { ok: true, deleted };
+    return { ok: false, deleted, error: `Mealie a refusé la suppression (${lastStatus}).` };
+  } catch (error) {
+    return { ok: false, deleted: 0, error: `Connexion impossible à Mealie. ${error.message}` };
+  }
+}
+
 // La page de configuration se referme elle-même une fois la clé enregistrée.
 async function closeSetup(sender) {
   if (sender?.tab?.id === undefined) return;
@@ -188,7 +252,7 @@ async function finishAutoConnect(message, sender) {
     return;
   }
 
-  await browser.storage.local.set({ token: message.token, connectError: "" });
+  await browser.storage.local.set({ token: message.token, tokenId: message.tokenId ?? null, connectError: "" });
   await clearPending();
   await flashConnected();
 
@@ -233,5 +297,6 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   if (message.type === "auto-connect-result") return finishAutoConnect(message, sender);
   if (message.type === "account-info") return accountInfo();
   if (message.type === "close-setup") return closeSetup(sender);
+  if (message.type === "revoke-token") return revokeToken();
   if (message.type === "page-recipe-state") return setRecipeState(sender?.tab?.id, message.isRecipe);
 });

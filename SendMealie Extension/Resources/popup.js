@@ -2,10 +2,26 @@ const DEFAULTS = { mealieUrl: "", token: "", endpoint: "/api/recipes/create/url"
 const sendView = document.querySelector("#send-view");
 const settingsView = document.querySelector("#settings-view");
 const sendButton = document.querySelector("#send-button");
+const sendLabel = document.querySelector("#send-label");
+const DONE_MS = 6000;
+let doneTimer = null;
+
+// La confirmation est passagère : au-delà, le bouton reprend son rôle normal.
+function clearSentState() {
+  clearTimeout(doneTimer);
+  sendButton.classList.remove("done");
+  sendButton.disabled = false;
+  sendLabel.textContent = "Enregistrer sur Mealie";
+  openRecipe.hidden = true;
+}
 const openRecipe = document.querySelector("#open-recipe");
 const resetButton = document.querySelector("#reset-button");
 const autoConnectButton = document.querySelector("#auto-connect");
 const retryButton = document.querySelector("#retry-connect");
+const backButton = document.querySelector("#back-button");
+const settingsLink = document.querySelector("#settings-link");
+const REPO_URL = "https://github.com/BlackMOTD/SendMealie";
+const WEB_URL = "https://warneford.fr";
 const status = document.querySelector("#status");
 const settingsStatus = document.querySelector("#settings-status");
 let currentTab;
@@ -47,6 +63,16 @@ async function loadAccount() {
 
   const info = await browser.runtime.sendMessage({ type: "account-info" });
   if (info?.ok) renderAccount(info.user, info.recipes);
+}
+
+function showView(name) {
+  const settings = name === "settings";
+  sendView.hidden = settings;
+  settingsView.hidden = !settings;
+  settingsLink.hidden = settings;
+  backButton.hidden = !settings;
+  resetButton.hidden = !settings;
+  if (!settings) disarmReset();
 }
 
 function refreshInstanceLink() {
@@ -103,16 +129,14 @@ async function loadSettings() {
   if (settings.mealieUrl && settings.token) return;
   if (setupMode) return;
   showStatus(status, "Configurez la connexion avant le premier envoi.");
-  sendView.hidden = true;
-  settingsView.hidden = false;
+  showView("settings");
 }
 
 function enterSetupMode() {
   document.body.classList.add("standalone");
   hostLabel.textContent = "Première configuration";
   document.querySelector("#setup-intro").hidden = false;
-  document.querySelector("#settings-link").hidden = true;
-  document.querySelector(".settings-footer").hidden = true;
+  document.querySelector(".header-actions").hidden = true;
   sendView.hidden = true;
   settingsView.hidden = false;
 }
@@ -244,24 +268,35 @@ openRecipe.addEventListener("click", () => {
   if (lastRecipeUrl) openInTab(lastRecipeUrl);
 });
 
-document.querySelector("#settings-link").addEventListener("click", () => { sendView.hidden = true; settingsView.hidden = false; });
-document.querySelector("#cancel-button").addEventListener("click", () => { settingsView.hidden = true; sendView.hidden = false; });
+settingsLink.addEventListener("click", () => showView("settings"));
+backButton.addEventListener("click", () => { showStatus(settingsStatus, ""); showView("send"); });
+
+document.querySelector("#repo-link").addEventListener("click", () => openInTab(REPO_URL));
+document.querySelector("#web-link").addEventListener("click", () => openInTab(WEB_URL));
+document.querySelector("#version").textContent = `v${browser.runtime.getManifest().version}`;
 
 let resetArmed = false;
 
 function disarmReset() {
   resetArmed = false;
-  resetButton.textContent = "Réinitialiser";
-  resetButton.classList.add("danger");
+  resetButton.classList.remove("armed");
+  resetButton.title = "Réinitialiser la connexion";
 }
 
 resetButton.addEventListener("click", async () => {
   if (!resetArmed) {
     resetArmed = true;
-    resetButton.textContent = "Confirmer ?";
-    showStatus(settingsStatus, "L’adresse et le jeton enregistrés seront effacés.");
+    resetButton.classList.add("armed");
+    resetButton.title = "Confirmer la réinitialisation";
+    showStatus(settingsStatus, "Cliquez à nouveau pour effacer l’adresse et la clé enregistrées.", "error");
     return;
   }
+
+  resetButton.disabled = true;
+  showStatus(settingsStatus, "Suppression de la clé sur Mealie…");
+
+  // La révocation d’abord : une fois le stockage vidé, plus de jeton pour s’authentifier.
+  const revoked = await browser.runtime.sendMessage({ type: "revoke-token" });
 
   await browser.storage.local.clear();
   settings = { ...DEFAULTS };
@@ -269,7 +304,18 @@ resetButton.addEventListener("click", async () => {
   refreshInstanceLink();
   renderAccount("", null);
   disarmReset();
-  showStatus(settingsStatus, "Connexion effacée. Ouverture de l’écran de bienvenue…", "success");
+  resetButton.disabled = false;
+
+  if (!revoked?.ok) {
+    showStatus(
+      settingsStatus,
+      `Réglages effacés, mais la clé « SendMealie » reste sur le serveur : ${revoked?.error || "suppression impossible."} À retirer depuis votre profil Mealie.`,
+      "error"
+    );
+    return;
+  }
+
+  showStatus(settingsStatus, `${revoked.deleted ? "Clé supprimée sur Mealie" : "Aucune clé à supprimer"} et réglages effacés. Ouverture de l’écran de bienvenue…`, "success");
   openInTab(browser.runtime.getURL("popup.html?setup=1"));
 });
 
@@ -294,13 +340,24 @@ sendButton.addEventListener("click", async () => {
     url: currentTab.url,
     recipeData
   });
-  sendButton.disabled = false;
-  showStatus(status, result.ok ? "Recette envoyée dans Mealie." : result.error, result.ok ? "success" : "error");
-  if (result.ok && result.slug && settings.mealieUrl) {
+  if (!result.ok) {
+    sendButton.disabled = false;
+    showStatus(status, result.error, "error");
+    return;
+  }
+
+  // Le bouton porte la confirmation, puis revient de lui-même à l’état neutre.
+  sendButton.classList.add("done");
+  sendLabel.textContent = "Recette enregistrée";
+  showStatus(status, "");
+  clearTimeout(doneTimer);
+  doneTimer = setTimeout(clearSentState, DONE_MS);
+
+  if (result.slug && settings.mealieUrl) {
     lastRecipeUrl = `${settings.mealieUrl}/g/home/r/${result.slug}`;
     openRecipe.hidden = false;
   }
-  if (result.ok) loadAccount();
+  loadAccount();
 });
 
 if (setupMode) enterSetupMode();

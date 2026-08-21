@@ -111,7 +111,11 @@ async function claimApiToken() {
   if (!token) return { error: "Mealie n’a pas renvoyé de clé API." };
 
   const user = await me.json().catch(() => null);
-  return { token, user: user?.username || user?.fullName || user?.email || "" };
+  return {
+    token,
+    tokenId: data?.id ?? data?.token_id ?? null,
+    user: user?.username || user?.fullName || user?.email || ""
+  };
 }
 
 async function watchForSession() {

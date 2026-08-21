@@ -17,14 +17,17 @@
 - Écrans d’envoi et de réglages à hauteur constante, sans saut du popup au changement de vue.
 - Popup resserré : 336 px de large, espacements et contrôles réduits.
 - Compteur de recettes cliquable en pied de popup, ouvrant l’instance Mealie dans un nouvel onglet.
-- Engrenage dans l’en-tête donnant accès aux réglages et à la réinitialisation de la connexion.
+- Engrenage dans l’en-tête donnant accès aux réglages, remplacé dans ceux-ci par une flèche de retour et un bouton de réinitialisation.
+- Pied de l’écran de réglages affichant la version, un lien GitHub et un lien Web.
 - Pied de popup affichant l’utilisateur connecté (initiale en majuscule) et le nombre de recettes de l’instance.
 - Fermeture automatique de la page de configuration une fois la clé enregistrée.
+- Confirmation d’enregistrement portée par le bouton lui-même : il vire au vert et affiche « Recette enregistrée » avec une coche qui se trace, puis revient à son état neutre au bout de six secondes.
 - Lien **Voir la recette** affiché après un import réussi.
 - Page d’accueil ouverte automatiquement à l’installation pour saisir l’adresse de l’instance.
 - Ouverture directe des réglages dans le popup tant que la connexion n’est pas configurée.
 - Pastille « ! » sur l’icône de la barre d’outils tant que la connexion est incomplète.
-- Bouton **Réinitialiser la connexion** effaçant les réglages et rouvrant l’écran de bienvenue.
+- Réinitialisation en deux temps effaçant les réglages et rouvrant l’écran de bienvenue, le bouton corbeille virant au rouge pour demander confirmation.
+- Révocation de la clé API sur Mealie avant l’effacement local, pour ne pas laisser de clé orpheline dans le profil.
 
 ### Correctifs
 
@@ -42,3 +45,4 @@
 - Connexion automatique bloquée sur « En attente… » : la détection passe désormais par le script de page déjà déclaré, au lieu d’une injection `scripting` que Safari pouvait refuser sans le signaler.
 - Diagnostic affiché lorsque la page Mealie ne répond pas, avec bouton **Relancer la détection**.
 - Reprise de la connexion en cours à la réouverture du popup.
+- Réinitialisation annonçant « clé supprimée » sans avoir rien supprimé : `GET /api/users/self` renvoie `tokens` en `array | null`, et une liste absente était traitée comme un succès.
