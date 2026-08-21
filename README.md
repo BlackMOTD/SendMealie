@@ -21,9 +21,28 @@ The interface is in French.
 - Xcode 15 or later
 - A Mealie instance — tested against v3.23
 
-## Install
+## Download
 
-Safari only loads extensions from a signed host app, so there is no binary to download. Build it with your own Apple ID:
+A compiled build is attached to each [release](https://github.com/BlackMOTD/SendMealie/releases) as a `.zip`.
+
+> [!WARNING]
+> **This build is not notarized by Apple.** It is signed with a personal development certificate, which is enough to run it but not enough to satisfy Gatekeeper. macOS will refuse to open it on first launch, and clearing that is on you:
+>
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/SendMealie.app
+> ```
+>
+> Alternatively, open it once, then allow it from **System Settings > Privacy & Security > Open Anyway**.
+>
+> If Safari does not list the extension afterwards, enable **Develop > Allow Unsigned Extensions** — a setting that resets every time Safari restarts.
+>
+> The software is provided as is, without warranty of any kind (see [LICENSE](LICENSE)). If any of the above makes you uncomfortable, **build from source instead** — it takes five minutes and produces a build signed by you, with none of these caveats.
+
+Install steps: unzip, move `SendMealie.app` to `/Applications`, launch it once, then enable the extension in **Safari > Settings > Extensions** and set its website access to **Allow on Every Website**.
+
+## Build from source
+
+This is the recommended route. Safari only loads extensions from a signed host app, and building it yourself avoids every warning above:
 
 1. Open `SendMealie.xcodeproj` in Xcode.
 2. For both the **SendMealie** and **SendMealie Extension** targets, under *Signing & Capabilities*, enable automatic signing and select your team.
