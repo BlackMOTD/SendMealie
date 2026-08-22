@@ -121,17 +121,6 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .primary:hover { background: var(--accent-hover); }
 .primary:disabled { cursor: default; opacity: .55; }
 
-.secondary {
-  width: 100%;
-  height: 34px;
-  margin-top: 10px;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: transparent;
-}
-.secondary:hover { border-color: var(--accent); }
-.secondary:disabled { cursor: default; opacity: .55; }
-
 .icon-button {
   width: 28px;
   height: 28px;
@@ -142,8 +131,6 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .icon-button:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 .icon-button:disabled { cursor: default; opacity: .4; }
 .icon-button:disabled:hover { color: var(--muted); border-color: var(--border); background: none; }
-.icon-button.armed { color: #fff; background: var(--danger); border-color: var(--danger); }
-.icon-button.armed:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
 
 .text-button {
   padding: 4px 0;
@@ -153,13 +140,15 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 .text-button:hover { color: var(--accent-hover); text-decoration: underline; }
 .text-button .icon { width: 13px; height: 13px; }
-.danger { color: var(--danger); }
-.danger:hover { color: var(--danger); }
+
+.hint { margin: 7px 0 0; color: var(--muted); font-size: 11px; }
 
 /* --- Écran d’envoi ------------------------------------------------------- */
 
-/* Les deux vues partagent la même hauteur : le popup ne saute pas d’un écran à l’autre. */
-#send-view, #settings-view { display: flex; flex-direction: column; min-height: 143px; }
+/* Une seule des deux vues s’affiche selon que la connexion existe ou non, et le
+   popup ne bascule plus de l’une à l’autre : chacune prend sa hauteur propre. */
+#send-view, #setup-view { display: flex; flex-direction: column; }
+#send-view { min-height: 139px; }
 
 .card {
   display: flex;
@@ -232,7 +221,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #send-button.done .glyph-done path { stroke-dashoffset: 0; }
 }
 
-#status, #settings-status {
+#status {
   min-height: 15px;
   margin: 8px 0 0;
   color: var(--muted);
@@ -240,7 +229,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 
 /* Vide, la ligne de statut ne doit pas creuser d’écart. */
-#status:empty, #settings-status:empty { min-height: 0; margin-top: 0; }
+#status:empty { min-height: 0; margin-top: 0; }
 .success { color: var(--accent) !important; }
 .error { color: var(--danger) !important; }
 
@@ -268,63 +257,23 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .account-link:disabled { cursor: default; }
 .account-link:disabled .icon-tiny { display: none; }
 
-/* --- Réglages ------------------------------------------------------------ */
+[hidden] { display: none !important; }
 
-#settings-view h2 { display: none; }
-body.standalone #settings-view h2 { display: block; }
-
-h2 {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-label {
-  display: block;
-  margin-bottom: 5px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-input {
-  display: block;
+/* Action de réparation : proposée, jamais mise au même rang que l’envoi. */
+.secondary {
   width: 100%;
   height: 32px;
-  margin-bottom: 12px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  background: var(--bg);
-  font: inherit;
+  margin-top: 9px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: transparent;
 }
-input::placeholder { color: var(--muted); opacity: .7; }
-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.secondary:hover { border-color: var(--accent); }
+.secondary:disabled { cursor: default; opacity: .55; }
+#force-send { margin-top: 6px; align-self: flex-start; }
 
-.hint { margin: 7px 0 0; color: var(--muted); font-size: 11px; }
-.setup-intro { margin: -6px 0 16px; }
+/* Diagnostic technique : présent quand il faut, discret le reste du temps. */
+.diagnostic { color: var(--danger); }
 
-.about {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: auto 0 0;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-.about > * { display: inline-flex; align-items: center; gap: 5px; }
-.about .icon { width: 13px; height: 13px; }
-#version { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.link-button { padding: 0; color: var(--muted); font-size: 11px; font-weight: 400; }
-.link-button:hover { color: var(--accent); text-decoration: underline; }
-
-/* --- Onglet de configuration --------------------------------------------- */
-
-body.standalone { width: auto; min-height: 100vh; }
-body.standalone main { max-width: 400px; margin: 0 auto; padding: 64px 24px; }
-body.standalone #settings-view { min-height: 0; }
-
-[hidden] { display: none !important; }
+/* L’explication ne doit pas coller au bouton qui la résout. */
+#open-app { margin-top: 12px; }

@@ -1,10 +1,17 @@
 {
   "manifest_version": 3,
   "name": "SendMealie",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Envoie la recette de la page courante vers Mealie.",
-  "permissions": ["activeTab", "storage"],
-  "host_permissions": ["http://*/*", "https://*/*"],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "action": {
     "default_title": "Enregistrer sur Mealie",
     "default_popup": "popup.html",
@@ -14,12 +21,23 @@
     }
   },
   "background": {
-    "service_worker": "background.js"
+    "scripts": [
+      "i18n.js",
+      "bridge.js",
+      "background.js"
+    ]
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "i18n.js",
+        "claim-token.js",
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],

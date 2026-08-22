@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Seul moyen pour l'extension de faire venir l'app au premier plan :
+	     Safari ne peut pas lancer d'application, mais il sait passer une URL
+	     à LaunchServices. -->
+	<!-- Résolu à la compilation : l'identifiant porte le préfixe d'équipe, qui
+	     change à chaque fork, et le lire à l'exécution n'est pas garanti. -->
+	<key>SMAppGroupIdentifier</key>
+	<string>$(DEVELOPMENT_TEAM).group.fr.warneford.sendmealie</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>fr.warneford.sendmealie</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>sendmealie</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

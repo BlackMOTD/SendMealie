@@ -1,39 +1,22 @@
-const DEFAULTS = { mealieUrl: "", token: "", endpoint: "/api/recipes/create/url" };
+// La langue vient de l’arrière-plan au démarrage ; ici on n’a besoin que
+// de savoir si une instance est connectée.
+const DEFAULTS = { mealieUrl: "", token: "" };
+const DONE_MS = 6000;
+
 const sendView = document.querySelector("#send-view");
-const settingsView = document.querySelector("#settings-view");
+const setupView = document.querySelector("#setup-view");
 const sendButton = document.querySelector("#send-button");
 const sendLabel = document.querySelector("#send-label");
-const DONE_MS = 6000;
-let doneTimer = null;
-
-// La confirmation est passagère : au-delà, le bouton reprend son rôle normal.
-function clearSentState() {
-  clearTimeout(doneTimer);
-  sendButton.classList.remove("done");
-  sendButton.disabled = false;
-  sendLabel.textContent = "Enregistrer sur Mealie";
-  openRecipe.hidden = true;
-}
+const forceButton = document.querySelector("#force-send");
+const fixAccessButton = document.querySelector("#fix-access");
 const openRecipe = document.querySelector("#open-recipe");
-const resetButton = document.querySelector("#reset-button");
-const autoConnectButton = document.querySelector("#auto-connect");
-const retryButton = document.querySelector("#retry-connect");
-const backButton = document.querySelector("#back-button");
 const settingsLink = document.querySelector("#settings-link");
-const REPO_URL = "https://github.com/BlackMOTD/SendMealie";
-const WEB_URL = "https://warneford.fr";
+const openAppButton = document.querySelector("#open-app");
+const setupDiagnostic = document.querySelector("#setup-diagnostic");
 const status = document.querySelector("#status");
-const settingsStatus = document.querySelector("#settings-status");
-let currentTab;
-let recipeData = null;
-let settings = { ...DEFAULTS };
-let lastRecipeUrl = null;
-const setupMode = new URLSearchParams(location.search).has("setup");
-
-function showStatus(element, message, kind = "") {
-  element.textContent = message;
-  element.className = kind;
-}
+const recipeLabel = document.querySelector("#recipe-label");
+const recipeTitle = document.querySelector("#recipe-title");
+const card = sendView.querySelector(".card");
 
 const accountRow = document.querySelector("#account");
 const accountUserLabel = document.querySelector("#account-user span");
@@ -41,12 +24,53 @@ const instanceLink = document.querySelector("#account-recipes");
 const accountRecipesLabel = instanceLink.querySelector("span");
 const hostLabel = document.querySelector("#host");
 
-function renderAccount(user, recipes) {
+let currentTab;
+let recipeData = null;
+let settings = { ...DEFAULTS };
+let lastRecipeUrl = null;
+let doneTimer = null;
+
+// État de la page courante, conservé pour pouvoir tout réafficher sans relire
+// la page — au changement de langue, par exemple.
+let page = { title: "", evidence: null, blocked: false };
+let account = { user: "", recipes: null };
+
+// Le service d’arrière-plan renvoie une clé, pas une phrase : c’est ici qu’on
+// traduit, dans le seul contexte dont on sait qu’il lit i18n.js correctement.
+function describe(result) {
+  if (!result?.errorKey) return result?.error || "";
+  const vars = { ...(result.errorVars || {}) };
+  if (result.hintKey) vars.hint = t(result.hintKey);
+  return t(result.errorKey, vars);
+}
+
+function showStatus(message, kind = "") {
+  status.textContent = message;
+  status.className = kind;
+}
+
+/* --- Rendu ----------------------------------------------------------------- */
+
+function renderPage() {
+  recipeTitle.textContent = page.title || t("card.untitled");
+
+  if (page.blocked) {
+    recipeLabel.textContent = t("card.blocked");
+    card.classList.remove("card-active");
+    return;
+  }
+
+  recipeLabel.textContent = page.evidence ? t("card.recipeFound") : t("card.noRecipe");
+  card.classList.toggle("card-active", Boolean(page.evidence));
+}
+
+function renderAccount() {
+  const { user, recipes } = account;
   accountUserLabel.textContent = user ? user.charAt(0).toUpperCase() + user.slice(1) : "";
   accountRecipesLabel.textContent = Number.isFinite(recipes)
-    ? `${recipes} recette${recipes > 1 ? "s" : ""}`
+    ? plural(recipes, "account.recipeOne", "account.recipeMany")
     : settings.mealieUrl
-    ? "Ouvrir Mealie"
+    ? t("account.openMealie")
     : "";
 
   accountUserLabel.parentElement.hidden = !accountUserLabel.textContent;
@@ -54,210 +78,187 @@ function renderAccount(user, recipes) {
   accountRow.hidden = !accountUserLabel.textContent && !accountRecipesLabel.textContent;
 }
 
-// Cache d’abord pour un affichage instantané, puis rafraîchissement depuis Mealie.
-async function loadAccount() {
-  if (setupMode) return;
-
-  const cached = await browser.storage.local.get({ accountUser: "", accountRecipes: null });
-  renderAccount(cached.accountUser, cached.accountRecipes);
-
-  const info = await browser.runtime.sendMessage({ type: "account-info" });
-  if (info?.ok) renderAccount(info.user, info.recipes);
-}
-
-function showView(name) {
-  const settings = name === "settings";
-  sendView.hidden = settings;
-  settingsView.hidden = !settings;
-  settingsLink.hidden = settings;
-  backButton.hidden = !settings;
-  resetButton.hidden = !settings;
-  if (!settings) disarmReset();
-}
-
-function refreshInstanceLink() {
+function renderHost() {
   instanceLink.disabled = !settings.mealieUrl;
   instanceLink.title = settings.mealieUrl
-    ? `Ouvrir ${settings.mealieUrl}`
-    : "Renseignez d’abord l’adresse de Mealie";
+    ? t("account.openUrl", { url: settings.mealieUrl })
+    : t("account.needUrl");
 
-  if (setupMode) return;
   hostLabel.textContent = settings.mealieUrl
     ? settings.mealieUrl.replace(/^https?:\/\//, "")
-    : "Aucune instance configurée";
+    : t("account.noInstance");
+}
+
+function showView() {
+  const configured = Boolean(settings.mealieUrl && settings.token);
+  sendView.hidden = !configured;
+  setupView.hidden = configured;
+}
+
+/* --- Chargement ------------------------------------------------------------ */
+
+// Cache d’abord pour un affichage instantané, puis rafraîchissement depuis Mealie.
+async function loadAccount() {
+  const cached = await browser.storage.local.get({ accountUser: "", accountRecipes: null });
+  account = { user: cached.accountUser, recipes: cached.accountRecipes };
+  renderAccount();
+
+  const info = await browser.runtime.sendMessage({ type: "account-info" });
+  if (info?.ok) {
+    account = { user: info.user, recipes: info.recipes };
+    renderAccount();
+  }
 }
 
 async function openInTab(url) {
   await browser.tabs.create({ url });
-  if (!setupMode) window.close();
+  window.close();
+}
+
+// Les réglages vivent dans l’app. Toute la mécanique d’ouverture est dans le
+// service d’arrière-plan : le popup se referme aussitôt, et un nettoyage
+// différé lancé ici mourrait avec lui.
+async function openApp(route = "") {
+  await browser.runtime.sendMessage({ type: "open-app", route }).catch(() => {});
+  window.close();
 }
 
 async function loadPage() {
   [currentTab] = await browser.tabs.query({ active: true, currentWindow: true });
-  document.querySelector("#recipe-title").textContent = currentTab?.title || "Page sans titre";
-  try {
-    const metadata = await browser.tabs.sendMessage(currentTab.id, { type: "get-recipe-metadata" });
-    if (metadata?.title) document.querySelector("#recipe-title").textContent = metadata.title;
-    recipeData = metadata?.recipe || null;
-    if (metadata?.isRecipe) {
-      document.querySelector("#recipe-label").textContent = "Sauvegarder la recette ?";
-      document.querySelector(".card").classList.add("card-active");
-    }
-  } catch {
-    // Pas de réponse du script de page : Safari n’autorise pas l’extension ici.
-    // Sans lui, ni détection de recette ni extraction des ingrédients.
+  page = { title: currentTab?.title || "", evidence: null, blocked: false };
+
+  const metadata = await browser.tabs
+    .sendMessage(currentTab.id, { type: "get-recipe-metadata" })
+    .catch(() => null);
+
+  // Safari ne rejette pas toujours quand personne n’écoute : il résout avec
+  // `undefined`. Une réponse absente ne dit pas « aucune recette », elle dit
+  // « le script de page n’a pas tourné » — presque toujours faute
+  // d’autorisation sur ce site. Confondre les deux fait accuser la page.
+  if (!metadata || typeof metadata.evidence === "undefined") {
     if (/^https?:/.test(currentTab?.url || "")) {
-      document.querySelector("#recipe-label").textContent = "Accès refusé à cette page";
-      showStatus(
-        status,
-        "Safari n’autorise pas SendMealie sur ce site. Cliquez sur son icône dans la barre d’outils, puis « Toujours autoriser sur ce site web ».",
-        "error"
-      );
+      page.blocked = true;
+      // L’absence d’analyse n’est pas une absence de recette : on laisse la main.
+      forceButton.hidden = false;
+      offerAccessFix();
     }
+    renderPage();
+    return;
+  }
+
+  if (metadata.title) page.title = metadata.title;
+  page.evidence = metadata.evidence;
+  recipeData = metadata.recipe || null;
+
+  renderPage();
+}
+
+// Le script de page n'a pas répondu. `browser.permissions.contains` ne permet
+// pas de dire pourquoi : sur Safari il reflète `host_permissions` du manifest,
+// pas l'autorisation réellement accordée site par site. On propose donc le
+// remède sans prétendre nommer la cause.
+function offerAccessFix() {
+  showStatus(`${t("perm.denied")} ${t("perm.manual")}`, "error");
+  fixAccessButton.textContent = t("perm.grant");
+  fixAccessButton.hidden = false;
+}
+
+function originPattern(url) {
+  try {
+    return `${new URL(url).origin}/*`;
+  } catch {
+    return null;
   }
 }
 
-async function loadSettings() {
-  settings = await browser.storage.local.get(DEFAULTS);
-  if (settings.endpoint === "/api/recipes/create") {
-    settings.endpoint = DEFAULTS.endpoint;
-    await browser.storage.local.set({ endpoint: settings.endpoint });
+/* --- Envoi ----------------------------------------------------------------- */
+
+// La confirmation est passagère : au-delà, le bouton reprend son rôle normal.
+function clearSentState() {
+  clearTimeout(doneTimer);
+  sendButton.classList.remove("done");
+  sendButton.disabled = false;
+  sendLabel.textContent = t("send.action");
+  openRecipe.hidden = true;
+}
+
+async function submitRecipe({ force = false } = {}) {
+  if (!currentTab?.url || !/^https?:/.test(currentTab.url)) {
+    showStatus(t("send.unsupported"), "error");
+    return;
   }
-  document.querySelector("#mealie-url").value = settings.mealieUrl;
-  refreshInstanceLink();
-  await resumePending();
-  if (settings.mealieUrl && settings.token) return;
-  if (setupMode) return;
-  showStatus(status, "Configurez la connexion avant le premier envoi.");
-  showView("settings");
-}
 
-function enterSetupMode() {
-  document.body.classList.add("standalone");
-  hostLabel.textContent = "Première configuration";
-  document.querySelector("#setup-intro").hidden = false;
-  document.querySelector(".header-actions").hidden = true;
-  sendView.hidden = true;
-  settingsView.hidden = false;
-}
+  // Page hors de portée du script : on n’a pas « rien trouvé », on n’a pas pu
+  // regarder. Le message doit rester celui de l’autorisation manquante, sans
+  // quoi l’utilisateur cherche une recette là où le problème est ailleurs.
+  if (page.blocked && !force) {
+    showStatus(`${t("perm.denied")} ${t("send.noRecipeHint")}`, "error");
+    forceButton.hidden = false;
+    return;
+  }
 
-function readForm() {
-  return { mealieUrl: document.querySelector("#mealie-url").value.trim().replace(/\/+$/, "") };
-}
+  sendButton.disabled = true;
+  forceButton.hidden = true;
+  openRecipe.hidden = true;
+  showStatus(t(force ? "send.forcing" : "send.sending"));
 
-const NO_CONTACT_HINT =
-  "Aucune réponse de la page Mealie. Safari bloque sans doute l’extension sur ce site : " +
-  "cliquez sur l’icône SendMealie depuis l’onglet Mealie et choisissez « Toujours autoriser sur ce site web », puis relancez la détection.";
-let contactTimer = null;
-
-// Le script de page signale sa présence : sans ce signal, l’extension n’a pas accès au site.
-function waitForContact() {
-  clearTimeout(contactTimer);
-  contactTimer = setTimeout(async () => {
-    const { connectSeen, connectBase } = await browser.storage.local.get({ connectSeen: false, connectBase: "" });
-    if (!connectBase || connectSeen) return;
-    showStatus(settingsStatus, NO_CONTACT_HINT, "error");
-    retryButton.hidden = false;
-  }, 12000);
-}
-
-// Rouvrir le popup pendant une connexion ne doit pas perdre l’état en cours.
-async function resumePending() {
-  const pending = await browser.storage.local.get({
-    connectBase: "",
-    connectStartedAt: 0,
-    connectSeen: false,
-    connectError: ""
+  const result = await browser.runtime.sendMessage({
+    type: "send-recipe",
+    url: currentTab.url,
+    recipeData,
+    evidence: page.evidence,
+    force
   });
 
-  if (pending.connectError) {
-    showStatus(settingsStatus, pending.connectError, "error");
-    retryButton.hidden = false;
-    return;
-  }
-
-  if (!pending.connectBase || Date.now() - pending.connectStartedAt > 240000) return;
-
-  autoConnectButton.disabled = true;
-  showStatus(
-    settingsStatus,
-    pending.connectSeen
-      ? "Page Mealie détectée. Identifiez-vous, la clé se crée ensuite toute seule…"
-      : "En attente de votre connexion à Mealie…"
-  );
-  waitForContact();
-}
-
-async function launchAutoConnect(mealieUrl) {
-  autoConnectButton.disabled = true;
-  retryButton.hidden = true;
-  showStatus(settingsStatus, "Ouverture de Mealie… connectez-vous dans l’onglet qui s’ouvre.");
-
-  const result = await browser.runtime.sendMessage({ type: "auto-connect", mealieUrl });
-  if (!result?.ok) {
-    autoConnectButton.disabled = false;
-    showStatus(settingsStatus, result?.error || "Connexion automatique impossible.", "error");
-    return;
-  }
-
-  settings.mealieUrl = mealieUrl;
-  refreshInstanceLink();
-  showStatus(settingsStatus, "En attente de votre connexion à Mealie…");
-  waitForContact();
-}
-
-autoConnectButton.addEventListener("click", () => {
-  const { mealieUrl } = readForm();
-  if (!mealieUrl) {
-    showStatus(settingsStatus, "Renseignez d’abord l’adresse de votre Mealie.", "error");
-    document.querySelector("#mealie-url").focus();
-    return;
-  }
-  launchAutoConnect(mealieUrl);
-});
-
-retryButton.addEventListener("click", async () => {
-  retryButton.hidden = true;
-  showStatus(settingsStatus, "Nouvelle tentative de détection…");
-  const result = await browser.runtime.sendMessage({ type: "auto-connect-retry" });
-  if (!result?.ok) {
-    launchAutoConnect(readForm().mealieUrl);
-    return;
-  }
-  waitForContact();
-});
-
-// La clé arrive depuis l’onglet Mealie : on rafraîchit l’écran sans rechargement.
-browser.storage.onChanged.addListener((changes, area) => {
-  if (area !== "local") return;
-
-  if (changes.connectSeen?.newValue) {
-    clearTimeout(contactTimer);
-    retryButton.hidden = true;
-    showStatus(settingsStatus, "Page Mealie détectée. Identifiez-vous, la clé se crée ensuite toute seule…");
-  }
-
-  if (changes.token?.newValue) {
-    clearTimeout(contactTimer);
-    settings.token = changes.token.newValue;
-    autoConnectButton.disabled = false;
-    retryButton.hidden = true;
-    refreshInstanceLink();
-    showStatus(settingsStatus, "Connecté ! La clé API a été créée et enregistrée.", "success");
-    loadAccount();
-
-    // Page de configuration : sa raison d’être vient de disparaître, elle se referme.
-    if (setupMode) {
-      setTimeout(() => browser.runtime.sendMessage({ type: "close-setup" }), 1400);
+  if (!result.ok) {
+    sendButton.disabled = false;
+    const message = describe(result);
+    // `canForce` distingue « rien trouvé sur la page » d’une vraie panne :
+    // seul le premier cas mérite qu’on propose de passer outre.
+    if (result.canForce) {
+      showStatus(`${message} ${t("send.noRecipeHint")}`, "error");
+      forceButton.hidden = false;
+    } else {
+      showStatus(message, "error");
     }
+    return;
   }
 
-  if (changes.connectError?.newValue) {
-    clearTimeout(contactTimer);
-    autoConnectButton.disabled = false;
-    retryButton.hidden = false;
-    showStatus(settingsStatus, changes.connectError.newValue, "error");
+  // Le bouton porte la confirmation, puis revient de lui-même à l’état neutre.
+  sendButton.classList.add("done");
+  sendLabel.textContent = t("send.done");
+  showStatus("");
+  clearTimeout(doneTimer);
+  doneTimer = setTimeout(clearSentState, DONE_MS);
+
+  if (result.slug && settings.mealieUrl) {
+    lastRecipeUrl = `${settings.mealieUrl}/g/home/r/${result.slug}`;
+    openRecipe.hidden = false;
   }
+  loadAccount();
+}
+
+/* --- Événements ------------------------------------------------------------ */
+
+sendButton.addEventListener("click", () => submitRecipe());
+forceButton.addEventListener("click", () => submitRecipe({ force: true }));
+
+// Demander l’autorisation depuis un clic est le seul moment où Safari
+// l’accepte ; et une fois accordée, l’onglet doit encore être rechargé pour
+// que le script y soit injecté.
+// Demander l'autorisation depuis un clic est le seul moment où Safari
+// l'accepte. Et l'obtenir ne suffit pas : le script n'est injecté que dans les
+// pages chargées ensuite, donc on recharge dans la foulée.
+fixAccessButton.addEventListener("click", async () => {
+  fixAccessButton.disabled = true;
+
+  const origin = originPattern(currentTab?.url);
+  if (origin) {
+    await browser.permissions.request({ origins: [origin] }).catch(() => false);
+  }
+
+  await browser.tabs.reload(currentTab.id).catch(() => {});
+  window.close();
 });
 
 instanceLink.addEventListener("click", () => {
@@ -268,101 +269,48 @@ openRecipe.addEventListener("click", () => {
   if (lastRecipeUrl) openInTab(lastRecipeUrl);
 });
 
-settingsLink.addEventListener("click", () => showView("settings"));
-backButton.addEventListener("click", () => { showStatus(settingsStatus, ""); showView("send"); });
+// La configuration peut arriver de l’app pendant que le popup est ouvert.
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  if (!("token" in changes) && !("mealieUrl" in changes)) return;
 
-document.querySelector("#repo-link").addEventListener("click", () => openInTab(REPO_URL));
-document.querySelector("#web-link").addEventListener("click", () => openInTab(WEB_URL));
-document.querySelector("#version").textContent = `v${browser.runtime.getManifest().version}`;
-
-let resetArmed = false;
-
-function disarmReset() {
-  resetArmed = false;
-  resetButton.classList.remove("armed");
-  resetButton.title = "Réinitialiser la connexion";
-}
-
-resetButton.addEventListener("click", async () => {
-  if (!resetArmed) {
-    resetArmed = true;
-    resetButton.classList.add("armed");
-    resetButton.title = "Confirmer la réinitialisation";
-    showStatus(settingsStatus, "Cliquez à nouveau pour effacer l’adresse et la clé enregistrées.", "error");
-    return;
-  }
-
-  resetButton.disabled = true;
-  showStatus(settingsStatus, "Suppression de la clé sur Mealie…");
-
-  // La révocation d’abord : une fois le stockage vidé, plus de jeton pour s’authentifier.
-  const revoked = await browser.runtime.sendMessage({ type: "revoke-token" });
-
-  await browser.storage.local.clear();
-  settings = { ...DEFAULTS };
-  document.querySelector("#mealie-url").value = "";
-  refreshInstanceLink();
-  renderAccount("", null);
-  disarmReset();
-  resetButton.disabled = false;
-
-  if (!revoked?.ok) {
-    showStatus(
-      settingsStatus,
-      `Réglages effacés, mais la clé « SendMealie » reste sur le serveur : ${revoked?.error || "suppression impossible."} À retirer depuis votre profil Mealie.`,
-      "error"
-    );
-    return;
-  }
-
-  showStatus(settingsStatus, `${revoked.deleted ? "Clé supprimée sur Mealie" : "Aucune clé à supprimer"} et réglages effacés. Ouverture de l’écran de bienvenue…`, "success");
-  openInTab(browser.runtime.getURL("popup.html?setup=1"));
-});
-
-settingsView.addEventListener("input", disarmReset);
-
-settingsView.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const { mealieUrl } = readForm();
-  if (mealieUrl) launchAutoConnect(mealieUrl);
-});
-
-sendButton.addEventListener("click", async () => {
-  if (!currentTab?.url || !/^https?:/.test(currentTab.url)) {
-    showStatus(status, "Cette page ne peut pas être importée.", "error");
-    return;
-  }
-  sendButton.disabled = true;
-  openRecipe.hidden = true;
-  showStatus(status, "Envoi en cours…");
-  const result = await browser.runtime.sendMessage({
-    type: "send-recipe",
-    url: currentTab.url,
-    recipeData
+  browser.storage.local.get(DEFAULTS).then((updated) => {
+    settings = updated;
+    renderHost();
+    showView();
+    if (settings.token) loadAccount();
   });
-  if (!result.ok) {
-    sendButton.disabled = false;
-    showStatus(status, result.error, "error");
-    return;
-  }
-
-  // Le bouton porte la confirmation, puis revient de lui-même à l’état neutre.
-  sendButton.classList.add("done");
-  sendLabel.textContent = "Recette enregistrée";
-  showStatus(status, "");
-  clearTimeout(doneTimer);
-  doneTimer = setTimeout(clearSentState, DONE_MS);
-
-  if (result.slug && settings.mealieUrl) {
-    lastRecipeUrl = `${settings.mealieUrl}/g/home/r/${result.slug}`;
-    openRecipe.hidden = false;
-  }
-  loadAccount();
 });
 
-if (setupMode) enterSetupMode();
-loadSettings();
-if (!setupMode) {
-  loadPage();
+/* --- Démarrage -------------------------------------------------------------- */
+
+async function boot() {
+  // L’arrière-plan arbitre entre les réglages de l’extension et ceux de l’app
+  // avant qu’on affiche quoi que ce soit.
+  const config = await browser.runtime.sendMessage({ type: "sync-config" }).catch(() => null);
+  setLanguage(config?.language || "");
+  applyI18n();
+
+  // « Rien n'est configuré » est une réponse légitime ; « je n'ai pas pu
+  // demander » n'en est pas une, et l'utilisateur doit pouvoir faire la
+  // différence sans ouvrir la console.
+  const bridge = config === null ? "dead" : config.bridge;
+  if (bridge && bridge !== "ok") {
+    // Le motif brut compte plus que la formulation : c’est lui qui dit
+    // lequel des maillons casse, et il n’apparaît nulle part ailleurs.
+    const detail = config?.bridgeError ? ` (${config.bridgeError})` : "";
+    setupDiagnostic.textContent = t(`setup.bridge.${bridge}`) + detail;
+    setupDiagnostic.hidden = false;
+  }
+
+  settings = await browser.storage.local.get(DEFAULTS);
+  renderHost();
+  showView();
+
+  if (!settings.mealieUrl || !settings.token) return;
+
+  await loadPage();
   loadAccount();
 }
+
+boot();

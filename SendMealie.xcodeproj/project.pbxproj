@@ -89,6 +89,11 @@
 			path = "SendMealie Extension";
 			sourceTree = "<group>";
 		};
+		0BAA000130376100000000A1 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +135,7 @@
 				0B0423DC3037619D0094FA3B /* SendMealieTests */,
 				0B0423E63037619D0094FA3B /* SendMealieUITests */,
 				0B0423F33037619D0094FA3B /* SendMealie Extension */,
+				0BAA000130376100000000A1 /* Shared */,
 				0B0423BE3037619B0094FA3B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -164,6 +170,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				0B0423BF3037619B0094FA3B /* SendMealie */,
+				0BAA000130376100000000A1 /* Shared */,
 			);
 			name = SendMealie;
 			packageProductDependencies = (
@@ -232,6 +239,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				0B0423F33037619D0094FA3B /* SendMealie Extension */,
+				0BAA000130376100000000A1 /* Shared */,
 			);
 			name = "SendMealie Extension";
 			packageProductDependencies = (
@@ -387,8 +395,8 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 1.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -419,8 +427,8 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 1.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -566,17 +574,17 @@
 				DEVELOPMENT_TEAM = PSXC8LH2HY;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/SendMealie-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = SendMealie;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 1.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -604,17 +612,17 @@
 				DEVELOPMENT_TEAM = PSXC8LH2HY;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/SendMealie-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = SendMealie;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 1.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -637,7 +645,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = PSXC8LH2HY;
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.warneford.-sendmealie.SendMealieTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -655,7 +663,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = PSXC8LH2HY;
 				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.warneford.-sendmealie.SendMealieTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";

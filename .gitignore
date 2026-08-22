@@ -1,0 +1,19 @@
+# Réglages de l’agent, propres à la machine (chemins absolus).
+.claude/
+
+# macOS
+.DS_Store
+
+# Xcode — état par utilisateur, jamais partagé.
+# Le schéma, lui, est partagé dans xcshareddata/ : sans lui, un clone n'a
+# aucun schéma et `xcodebuild -scheme SendMealie` échoue.
+xcuserdata/
+*.xcuserdatad/
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+# Produits de compilation
+build/
+DerivedData/
+*.xcarchive
+*.app
+*.zip

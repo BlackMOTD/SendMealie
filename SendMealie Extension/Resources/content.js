@@ -1,6 +1,13 @@
 const CONNECT_TIMEOUT_MS = 240000;
 const CONNECT_POLL_MS = 1500;
-const TOKEN_NAME = "SendMealie";
+
+// Le `@context` vit sur le document JSON-LD, pas sur le nœud Recipe qu'on en
+// extrait. Le laisser derrière produit un objet que plus rien ne rattache à
+// schema.org : Mealie répond alors 400 BAD_RECIPE_DATA. On le réattache.
+function withContext(recipe, document_) {
+  if (recipe['@context']) return recipe;
+  return { '@context': document_?.['@context'] || 'https://schema.org', ...recipe };
+}
 
 function readRecipeMetadata() {
   const scripts = [...document.querySelectorAll('script[type="application/ld+json"]')];
@@ -12,7 +19,7 @@ function readRecipeMetadata() {
       const recipe = candidates.find((item) => item?.['@type'] === 'Recipe' || item?.['@type']?.includes?.('Recipe'));
       if (recipe) return {
         title: recipe.name || document.title,
-        recipe
+        recipe: withContext(recipe, Array.isArray(parsed) ? parsed[0] : parsed)
       };
     } catch {}
   }
@@ -20,35 +27,50 @@ function readRecipeMetadata() {
   return { title: document.title, recipe: null };
 }
 
-// Une page compte comme recette si elle est balisée, ou à défaut si elle porte
-// à la fois un titre « Ingrédients » et un titre d’étapes. Exiger les deux évite
-// de s’activer sur un article de blog qui cite une liste d’ingrédients.
-function looksLikeRecipe(recipe) {
-  if (recipe) return true;
-  if (document.querySelector('[itemtype*="schema.org/Recipe" i]')) return true;
+// Ce qui, sur la page, permet d’affirmer qu’il s’agit d’une recette. La valeur
+// nomme la preuve trouvée ; `null` signifie qu’il n’y a rien à envoyer, et
+// c’est ce qui bloque l’enregistrement côté arrière-plan.
+//
+// L’heuristique des titres exige à la fois « Ingrédients » et un titre
+// d’étapes : n’en demander qu’un s’activerait sur un article de blog qui cite
+// une liste d’ingrédients.
+function detectEvidence(recipe) {
+  if (recipe) return "json-ld";
+  if (document.querySelector('[itemtype*="schema.org/Recipe" i]')) return "microdata";
+  if (document.querySelector(".hrecipe, .h-recipe")) return "microformat";
 
   const headings = [...document.querySelectorAll("h1, h2, h3, h4")]
     .map((node) => node.textContent.trim().toLowerCase());
   const hasIngredients = headings.some((text) => /^ingr[ée]dients?\b/.test(text));
   const hasSteps = headings.some((text) =>
-    /^(pr[ée]paration|instructions?|[ée]tapes|r[ée]alisation)\b/.test(text)
+    /^(pr[ée]paration|instructions?|[ée]tapes|r[ée]alisation|directions?|methods?|steps)\b/.test(text)
   );
-  return hasIngredients && hasSteps;
+  return hasIngredients && hasSteps ? "headings" : null;
+}
+
+function analysePage() {
+  const metadata = readRecipeMetadata();
+  const evidence = detectEvidence(metadata.recipe);
+  return { ...metadata, evidence, isRecipe: Boolean(evidence) };
 }
 
 function reportRecipeState() {
-  const { recipe } = readRecipeMetadata();
   browser.runtime
-    .sendMessage({ type: "page-recipe-state", isRecipe: looksLikeRecipe(recipe) })
+    .sendMessage({ type: "page-recipe-state", isRecipe: analysePage().isRecipe })
     .catch(() => {});
 }
 
 reportRecipeState();
 
+// Une promesse, pas un objet nu. Le contrat WebExtensions ne reconnaît une
+// réponse que sous forme de promesse (ou de `sendResponse` avec un retour
+// `true`) : rendre l'objet directement vaut « message non traité », et
+// `tabs.sendMessage` résout alors avec `undefined` côté popup. Le popup lisait
+// ce silence comme une page illisible, sur toutes les pages, depuis toujours —
+// l'import par URL masquait la panne.
 browser.runtime.onMessage.addListener((message) => {
   if (message.type !== "get-recipe-metadata") return;
-  const metadata = readRecipeMetadata();
-  return { ...metadata, isRecipe: looksLikeRecipe(metadata.recipe) };
+  return Promise.resolve(analysePage());
 });
 
 /* --- Connexion automatique -------------------------------------------------
@@ -57,64 +79,24 @@ browser.runtime.onMessage.addListener((message) => {
    (session du navigateur). Piloté par le stockage plutôt que par une injection :
    ça survit au rechargement de la page comme à la mise en veille du worker. */
 
-const isJwt = (value) => typeof value === "string" && value.split(".").length === 3;
+browser.storage.local.get({ language: "" }).then(({ language }) => setLanguage(language)).catch(() => {});
 
-function findBearer() {
-  for (const key of Object.keys(localStorage)) {
-    if (!/token|auth/i.test(key)) continue;
-    const raw = localStorage.getItem(key);
-    if (!raw) continue;
-
-    const direct = raw.replace(/^"|"$/g, "").replace(/^Bearer /i, "");
-    if (isJwt(direct)) return direct;
-
-    try {
-      const parsed = JSON.parse(raw);
-      for (const candidate of [parsed?.access_token, parsed?.token, parsed?.value]) {
-        const cleaned = String(candidate ?? "").replace(/^Bearer /i, "");
-        if (isJwt(cleaned)) return cleaned;
-      }
-    } catch {}
-  }
-
-  for (const part of document.cookie.split(";")) {
-    const [name, ...rest] = part.trim().split("=");
-    if (!/token/i.test(name)) continue;
-    const value = decodeURIComponent(rest.join("=")).replace(/^Bearer /i, "");
-    if (isJwt(value)) return value;
-  }
-
-  return null;
-}
-
+// L'obtention de la clé vit dans Shared/claim-token.js, partagé avec l'app.
+// Ici on ne fait qu'adapter son verdict au vocabulaire de watchForSession :
+// `null` pour « rien encore », sinon un résultat ou une erreur traduite.
 async function claimApiToken() {
-  const headers = { "Content-Type": "application/json", Accept: "application/json" };
-  const bearer = findBearer();
-  if (bearer) headers.Authorization = `Bearer ${bearer}`;
+  const result = await sendMealieClaimToken();
 
-  const me = await fetch("/api/users/self", { credentials: "include", headers });
-  if (!me.ok) return null; // pas encore identifié
+  if (result.state === "anonymous" || result.state === "unreachable") return null;
 
-  const created = await fetch("/api/users/api-tokens", {
-    method: "POST",
-    credentials: "include",
-    headers,
-    body: JSON.stringify({ name: TOKEN_NAME })
-  });
-  if (!created.ok) {
-    const detail = await created.text().catch(() => "");
-    return { error: `Création de la clé refusée par Mealie (${created.status}). ${detail.slice(0, 120)}` };
+  if (result.state === "granted") {
+    return { token: result.token, tokenId: result.tokenId, user: result.user };
   }
 
-  const data = await created.json().catch(() => null);
-  const token = data?.token || data?.access_token;
-  if (!token) return { error: "Mealie n’a pas renvoyé de clé API." };
-
-  const user = await me.json().catch(() => null);
   return {
-    token,
-    tokenId: data?.id ?? data?.token_id ?? null,
-    user: user?.username || user?.fullName || user?.email || ""
+    error: result.reason === "no-token"
+      ? t("content.noKey")
+      : t("content.keyRefused", { status: result.status, detail: result.detail })
   };
 }
 
@@ -130,7 +112,6 @@ async function watchForSession() {
   if (Date.now() - connectStartedAt > CONNECT_TIMEOUT_MS) return;
 
   window.__sendMealieWatching = true;
-  browser.runtime.sendMessage({ type: "auto-connect-alive" });
 
   try {
     const deadline = connectStartedAt + CONNECT_TIMEOUT_MS;
@@ -148,7 +129,7 @@ async function watchForSession() {
     }
     browser.runtime.sendMessage({
       type: "auto-connect-result",
-      error: "Délai dépassé : aucune identification détectée sur Mealie."
+      error: t("content.timeout")
     });
   } finally {
     window.__sendMealieWatching = false;

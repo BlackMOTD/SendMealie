@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Doit valoir exactement la même chose que dans l'app : c'est le seul
+	     terrain que les deux processus partagent. -->
+	<key>SMAppGroupIdentifier</key>
+	<string>$(DEVELOPMENT_TEAM).group.fr.warneford.sendmealie</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
